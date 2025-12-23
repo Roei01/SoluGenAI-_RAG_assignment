@@ -1,7 +1,7 @@
 # ingest.py
 """
 סקריפט חד-פעמי:
-1. קורא קובץ CSV קטן מקומי
+1. טוען דאטה-סט של שאלות טריוויה מ-Kaggle
 2. יוצר חתיכות (chunks) מהטקסט
 3. מייצר embeddings בעזרת OpenAI
 4. מעלה את הווקטורים + הטקסט ל-Pinecone
@@ -23,9 +23,33 @@ from config import (
     CHUNK_OVERLAP,
 )
 
+# === NEW: KaggleHub imports ===
+import kagglehub
+from kagglehub import KaggleDatasetAdapter
+
 # יוצרים לקוחות ל-OpenAI ול-Pinecone
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 pc = Pinecone(api_key=PINECONE_API_KEY)
+
+
+def load_quiz_dataset_from_kaggle() -> pd.DataFrame:
+    """
+    טוען את הדאטה-סט של Open Trivia Database מ-Kaggle כ-DataFrame.
+    שים לב: file_path צריך להתאים לשם הקובץ בדאטה-סט.
+    אם השם שונה, פשוט תעדכן פה.
+    """
+    # אם הורדת מהאתר קובץ בשם quiz_questions.csv –
+    # זה כמעט בוודאות אותו שם גם ב-Kaggle.
+    file_path = "quiz_questions.csv"
+
+    df = kagglehub.load_dataset(
+        KaggleDatasetAdapter.PANDAS,
+        "shreyasur965/open-trivia-database-quiz-questions-all-categories",
+        file_path,
+    )
+
+    print(f"Loaded {len(df)} quiz rows from Kaggle")
+    return df
 
 
 def chunk_text(text: str, chunk_size: int, overlap: int) -> List[str]:
@@ -52,7 +76,7 @@ def chunk_text(text: str, chunk_size: int, overlap: int) -> List[str]:
 def embed_texts(texts: List[str]) -> List[List[float]]:
     """
     מקבל רשימת טקסטים ומחזיר רשימת וקטורים (embeddings)
-    ע"י שימוש במודל text-embedding-3-small.
+    ע"י שימוש במודל שמוגדר ב-EMBEDDING_MODEL.
     """
     response = openai_client.embeddings.create(
         model=EMBEDDING_MODEL,
@@ -66,7 +90,7 @@ def embed_texts(texts: List[str]) -> List[List[float]]:
 def create_index_if_not_exists():
     """
     יוצר אינדקס ב-Pinecone אם הוא לא קיים.
-    dimension חייב להתאים למימד של המודל (1536 לטקסט-אמבדינג-3-סמול).
+    dimension חייב להתאים למימד של המודל (למשל 1536 ל-text-embedding-3-small).
     """
     existing_indexes = [idx["name"] for idx in pc.list_indexes()]
 
@@ -85,27 +109,49 @@ def create_index_if_not_exists():
 
 
 def main():
-    # 1. טוענים דאטה-סט קטן (לדוגמה CSV)
-    #    פה אתה מחליט איזה Dataset לקחת מ-Kaggle, מוריד אותו ושם ב-backend/data.csv
-    df = pd.read_csv("data.csv")
+    df = load_quiz_dataset_from_kaggle()
+    df = df.head(200)
+    print(f"Using only first {len(df)} rows out of full dataset")
 
-    # נניח שיש עמודת טקסט בשם "text" (אתה יכול להתאים את השם)
+    index = create_index_if_not_exists()
+
+    # 🧹 ניקוי האינדקס לפני העלאה מחדש
+    index.delete(delete_all=True)
+    print("Index cleared before ingesting new data.")
+
+    # מצפים לעמודות כמו: category, type, difficulty, question, correct_answer, incorrect_answers
     all_chunks: List[Dict] = []
 
-    for _, row in df.iterrows():
-        source_id = str(row.get("id", uuid.uuid4()))
-        # בוחרים את העמודה המרכזית (למשל "text" או מחברים כמה עמודות)
-        text = str(row.get("text", ""))
+    for idx, row in df.iterrows():
+        # נשתמש באינדקס של השורה בתור source_id בסיסי
+        source_id = f"quiz_{idx}"
 
-        if not text.strip():
+        category = str(row.get("category", "")).strip()
+        difficulty = str(row.get("difficulty", "")).strip()
+        question = str(row.get("question", "")).strip()
+        correct_answer = str(row.get("correct_answer", "")).strip()
+        incorrect_answers = str(row.get("incorrect_answers", "")).strip()
+
+        # אם אין שאלה – אין מה לאנדקס
+        if not question:
             continue
 
-        chunks = chunk_text(text, CHUNK_SIZE, CHUNK_OVERLAP)
+        # בונים טקסט אחיד שיהיה ברור למודל
+        # (אתה יכול לשנות את הפורמט איך שתרצה)
+        base_text = (
+            f"Category: {category}\n"
+            f"Difficulty: {difficulty}\n"
+            f"Question: {question}\n"
+            f"Correct answer: {correct_answer}\n"
+            f"Incorrect answers: {incorrect_answers}"
+        )
 
-        for idx, chunk in enumerate(chunks):
+        chunks = chunk_text(base_text, CHUNK_SIZE, CHUNK_OVERLAP)
+
+        for c_idx, chunk in enumerate(chunks):
             all_chunks.append(
                 {
-                    "id": f"{source_id}_{idx}",
+                    "id": f"{source_id}_{c_idx}",
                     "text": chunk,
                     "source_id": source_id,
                 }
