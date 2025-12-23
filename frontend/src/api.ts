@@ -3,13 +3,17 @@ export interface SearchResult {
   score: number;
   text: string;
   source_id?: string | null;
+  category?: string | null;
+  difficulty?: string | null;
+  question?: string | null;
+  correct_answer?: string | null;
 }
 
 export interface SearchResponse {
   results: SearchResult[];
 }
 
-// כתובת ה-Backend (FastAPI שלך)
+// Backend URL (your FastAPI)
 const API_BASE_URL = "http://127.0.0.1:8000";
 
 export async function searchQuery(query: string): Promise<SearchResult[]> {
