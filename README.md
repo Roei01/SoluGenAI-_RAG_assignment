@@ -1,36 +1,52 @@
-# SoluGenAI-\_RAG_assignment
+SoluGenAI – RAG Assignment
 
-make .env file in backend/.env
-in this struc:
+This project demonstrates a Retrieval-Augmented Generation (RAG) pipeline using OpenAI and Pinecone, with a Python backend and a frontend client.
 
-PINECONE_API_KEY= xxxxxxx-api-key-xxxxxxxx
-OPENAI_API_KEY= xxxxxxxxx-api-key-xxxxxxxx
+Environment Variables
+
+Create a .env file inside the backend/ directory.
+
+Required structure
+PINECONE_API_KEY=xxxxxxxx-api-key-xxxxxxxx
+OPENAI_API_KEY=xxxxxxxx-api-key-xxxxxxxx
+
 EMBEDDING_MODEL=text-embedding-3-small
-PINECONE_INDEX_NAME=my-rag-index
 CHUNK_SIZE=500
 CHUNK_OVERLAP=100
 TOP_K=5
 SIMILARITY_THRESHOLD=0.2
 
-if you don't choose its the standart:
-CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "500"))
-CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "100"))
-TOP_K = int(os.getenv("TOP_K", "5"))
-SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.75"))
+Important
+PINECONE_API_KEY and OPENAI_API_KEY are mandatory.
 
-start project:
+Default Configuration
 
-cd backend  
+If you don’t explicitly set these values, the system will use the following defaults:
+
+CHUNK_SIZE = 500
+CHUNK_OVERLAP = 100
+TOP_K = 5
+SIMILARITY_THRESHOLD = 0.3
+
+▶Getting Started
+1️⃣ Clone the repository
+git clone https://github.com/Roei01/SoluGenAI-_RAG_assignment.git
+
+Add your API keys according to the instructions above.
+
+2️⃣ Backend Setup
+cd backend
 python -m venv venv
-source venv/bin/activate # ב-Windows: venv\Scripts\activate
+source venv/bin/activate # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
+Ingest the data
 python ingest.py
 
+Run the backend server
 uvicorn main:app --reload
 
-open new terminal
-
+3️⃣ Frontend Setup (New Terminal)
 cd frontend
-npm i
+npm install
 npm run dev
