@@ -153,10 +153,12 @@ def main():
                 question = str(row.get("question", "")).strip()
                 correct_answer = str(row.get("correct_answer", "")).strip()
                 incorrect_answers = str(row.get("incorrect_answers", "")).strip()
+                q_type = str(row.get("type", "")).strip()
 
                 if not question:
                     continue
 
+                # We keep a text representation for semantic search context
                 base_text = (
                     f"Category: {category}\n"
                     f"Difficulty: {difficulty}\n"
@@ -173,6 +175,17 @@ def main():
                             "id": f"{source_id}_{c_idx}",
                             "text": chunk,
                             "source_id": source_id,
+                            # Save structured metadata to allow filtering in Pinecone
+                            "metadata": {
+                                "category": category,
+                                "difficulty": difficulty,
+                                "question": question,
+                                "correct_answer": correct_answer,
+                                "incorrect_answers": incorrect_answers,
+                                "type": q_type,
+                                "text": chunk, # Keep the text chunk in metadata for retrieval
+                                "source_id": source_id
+                            }
                         }
                     )
             except Exception as row_err:
@@ -199,10 +212,7 @@ def main():
                         {
                             "id": item_id,
                             "values": vec,
-                            "metadata": {
-                                "text": item["text"],
-                                "source_id": item["source_id"],
-                            },
+                            "metadata": item["metadata"],
                         }
                     )
 
