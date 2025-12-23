@@ -126,8 +126,20 @@ button:disabled {
   background: #f9fafb;
 }
 
-.score {
+.separator {
+  margin: 0 8px;
+  color: #d1d5db;
+}
+
+.result-header {
   font-size: 0.8rem;
   color: #4b5563;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.result-row {
+  margin-bottom: 4px;
+  line-height: 1.4;
 }
