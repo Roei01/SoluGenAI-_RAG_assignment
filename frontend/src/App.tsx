@@ -45,7 +45,7 @@ function App() {
           id="query"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="For example: difficult history questions"
+          placeholder="For example: difficult Geography questions"
         />
 
         <button onClick={handleSearch} disabled={loading}>
