@@ -149,6 +149,14 @@ def search(request: SearchRequest):
                     )
                 )
 
+        # Check if the top result is significantly better than the runner-up
+        if len(results) >= 2:
+            top_score = results[0].score
+            second_score = results[1].score
+            if (top_score - second_score) > 0.2:
+                logger.info("Top result is significantly better (>0.2 diff). Returning only the top result.")
+                results = [results[0]]
+
         return SearchResponse(results=results)
 
     except HTTPException:

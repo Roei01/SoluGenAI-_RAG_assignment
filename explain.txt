@@ -10,9 +10,10 @@ Git clone https://github.com/Roei01/SoluGenAI-_RAG_assignment.git
 
 
 כל השאלות צריכות להיות באנגלית
-שאלות שאפשר לשאול:
+שאלות לדוגמא שאפשר לשאול:
 Give me examples of easy/medium/hard level questions on the "name-of-category".
 Give me a riddle about Nutella.   נוטלה זה דוגמא קיימת (יכול להיות כל דבר אחר)
+What does the EDM label Monstercat sign?
 תן לי שאלת טריוויה שמדברת על z
 שאלות ברורות על השאלת טריוויה יכולות לעבוד
 
