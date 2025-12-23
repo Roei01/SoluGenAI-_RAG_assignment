@@ -1,12 +1,21 @@
-SoluGenAI – RAG Assignment
+<h1>SoluGenAI – RAG Assignment</h1>
 
-This project demonstrates a Retrieval-Augmented Generation (RAG) pipeline using OpenAI and Pinecone, with a Python backend and a frontend client.
+<p>
+This project demonstrates a <strong>Retrieval-Augmented Generation (RAG)</strong> pipeline
+using <strong>OpenAI</strong> and <strong>Pinecone</strong>, with a Python backend and a frontend client.
+</p>
 
-Environment Variables
+<hr />
 
-Create a .env file inside the backend/ directory.
+<h2>Environment Variables</h2>
 
-Required structure
+<p>
+Create a <code>.env</code> file inside the <code>backend/</code> directory.
+</p>
+
+<h3>Required structure</h3>
+
+<pre><code>
 PINECONE_API_KEY=xxxxxxxx-api-key-xxxxxxxx
 OPENAI_API_KEY=xxxxxxxx-api-key-xxxxxxxx
 
@@ -15,38 +24,70 @@ CHUNK_SIZE=500
 CHUNK_OVERLAP=100
 TOP_K=5
 SIMILARITY_THRESHOLD=0.2
+</code></pre>
 
-Important
-PINECONE_API_KEY and OPENAI_API_KEY are mandatory.
+<p><strong>⚠ Important:</strong><br />
+<code>PINECONE_API_KEY</code> and <code>OPENAI_API_KEY</code> are mandatory.
+</p>
 
-Default Configuration
+<hr />
 
+<h2>Default Configuration</h2>
+
+<p>
 If you don’t explicitly set these values, the system will use the following defaults:
+</p>
 
+<pre><code>
 CHUNK_SIZE = 500
 CHUNK_OVERLAP = 100
 TOP_K = 5
 SIMILARITY_THRESHOLD = 0.3
+</code></pre>
 
-▶Getting Started
-1️⃣ Clone the repository
+<hr />
+
+<h2>▶ Getting Started</h2>
+
+<h3>1️⃣ Clone the repository</h3>
+
+<pre><code>
 git clone https://github.com/Roei01/SoluGenAI-_RAG_assignment.git
+</code></pre>
 
+<p>
 Add your API keys according to the instructions above.
+</p>
 
-2️⃣ Backend Setup
+<hr />
+
+<h3>2️⃣ Backend Setup</h3>
+
+<pre><code>
 cd backend
 python -m venv venv
-source venv/bin/activate # On Windows: venv\Scripts\activate
+source venv/bin/activate   # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
+</code></pre>
 
-Ingest the data
+<h4>Ingest the data</h4>
+
+<pre><code>
 python ingest.py
+</code></pre>
 
-Run the backend server
+<h4>Run the backend server</h4>
+
+<pre><code>
 uvicorn main:app --reload
+</code></pre>
 
-3️⃣ Frontend Setup (New Terminal)
+<hr />
+
+<h3>3️⃣ Frontend Setup <small>(New Terminal)</small></h3>
+
+<pre><code>
 cd frontend
 npm install
 npm run dev
+</code></pre>
