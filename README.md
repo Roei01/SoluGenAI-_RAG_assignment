@@ -18,6 +18,8 @@ CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "100"))
 TOP_K = int(os.getenv("TOP_K", "5"))
 SIMILARITY_THRESHOLD = float(os.getenv("SIMILARITY_THRESHOLD", "0.75"))
 
+start project:
+
 cd backend  
 python -m venv venv
 source venv/bin/activate # ב-Windows: venv\Scripts\activate
