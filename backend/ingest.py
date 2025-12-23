@@ -1,18 +1,12 @@
-# ingest.py
-"""
-סקריפט חד-פעמי:
-1. טוען דאטה-סט של שאלות טריוויה מ-Kaggle
-2. יוצר חתיכות (chunks) מהטקסט
-3. מייצר embeddings בעזרת OpenAI
-4. מעלה את הווקטורים + הטקסט ל-Pinecone
-"""
-
+import logging
 import uuid
 from typing import List, Dict
 
 import pandas as pd
-from openai import OpenAI
-from pinecone import Pinecone, ServerlessSpec
+from openai import OpenAI, OpenAIError
+from pinecone import Pinecone, ServerlessSpec, PineconeException
+import kagglehub
+from kagglehub import KaggleDatasetAdapter
 
 from config import (
     OPENAI_API_KEY,
@@ -23,173 +17,208 @@ from config import (
     CHUNK_OVERLAP,
 )
 
-# === NEW: KaggleHub imports ===
-import kagglehub
-from kagglehub import KaggleDatasetAdapter
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
 
-# יוצרים לקוחות ל-OpenAI ול-Pinecone
-openai_client = OpenAI(api_key=OPENAI_API_KEY)
-pc = Pinecone(api_key=PINECONE_API_KEY)
+# Initialize clients
+try:
+    openai_client = OpenAI(api_key=OPENAI_API_KEY)
+    pc = Pinecone(api_key=PINECONE_API_KEY)
+except Exception as e:
+    logger.critical(f"Failed to initialize API clients: {e}")
+    raise
 
 
 def load_quiz_dataset_from_kaggle() -> pd.DataFrame:
     """
-    טוען את הדאטה-סט של Open Trivia Database מ-Kaggle כ-DataFrame.
-    שים לב: file_path צריך להתאים לשם הקובץ בדאטה-סט.
-    אם השם שונה, פשוט תעדכן פה.
+    Loads the Open Trivia Database dataset from Kaggle into a pandas DataFrame.
     """
-    # אם הורדת מהאתר קובץ בשם quiz_questions.csv –
-    # זה כמעט בוודאות אותו שם גם ב-Kaggle.
-    file_path = "quiz_questions.csv"
-
-    df = kagglehub.load_dataset(
-        KaggleDatasetAdapter.PANDAS,
-        "shreyasur965/open-trivia-database-quiz-questions-all-categories",
-        file_path,
-    )
-
-    print(f"Loaded {len(df)} quiz rows from Kaggle")
-    return df
+    try:
+        file_path = "quiz_questions.csv"
+        # The path should match the file name in the dataset
+        df = kagglehub.load_dataset(
+            KaggleDatasetAdapter.PANDAS,
+            "shreyasur965/open-trivia-database-quiz-questions-all-categories",
+            file_path,
+        )
+        logger.info(f"Successfully loaded {len(df)} rows from Kaggle.")
+        return df
+    except Exception as e:
+        logger.error(f"Failed to load dataset from Kaggle: {e}")
+        raise
 
 
 def chunk_text(text: str, chunk_size: int, overlap: int) -> List[str]:
     """
-    חותך טקסט לחתיכות בגודל קבוע (לפי תווים, לא לפי טוקנים).
-    overlap - כמה תווים לחפוף בין חתיכה לחתיכה.
+    Splits the input text into fixed-size chunks based on character count with overlap.
     """
-    text = text.strip()
-    chunks = []
-    start = 0
+    try:
+        text = text.strip()
+        chunks = []
+        start = 0
 
-    while start < len(text):
-        end = start + chunk_size
-        chunk = text[start:end]
-        chunks.append(chunk)
-        start = end - overlap  # זזים קדימה עם חפיפה
+        while start < len(text):
+            end = start + chunk_size
+            chunk = text[start:end]
+            chunks.append(chunk)
+            start = end - overlap
 
-        if start < 0:
-            break
+            if start < 0:
+                break
 
-    return chunks
+        return chunks
+    except Exception as e:
+        logger.error(f"Error during text chunking: {e}")
+        return []
 
 
 def embed_texts(texts: List[str]) -> List[List[float]]:
     """
-    מקבל רשימת טקסטים ומחזיר רשימת וקטורים (embeddings)
-    ע"י שימוש במודל שמוגדר ב-EMBEDDING_MODEL.
+    Generates embeddings for a list of text strings using the OpenAI API.
     """
-    response = openai_client.embeddings.create(
-        model=EMBEDDING_MODEL,
-        input=texts,
-    )
-    # כל אובייקט ב-data מכיל embedding אחד
-    embeddings = [item.embedding for item in response.data]
-    return embeddings
+    try:
+        response = openai_client.embeddings.create(
+            model=EMBEDDING_MODEL,
+            input=texts,
+        )
+        embeddings = [item.embedding for item in response.data]
+        return embeddings
+    except OpenAIError as e:
+        logger.error(f"OpenAI API error during embedding generation: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error during embedding generation: {e}")
+        raise
 
 
 def create_index_if_not_exists():
     """
-    יוצר אינדקס ב-Pinecone אם הוא לא קיים.
-    dimension חייב להתאים למימד של המודל (למשל 1536 ל-text-embedding-3-small).
+    Checks if the Pinecone index exists and creates it if necessary.
     """
-    existing_indexes = [idx["name"] for idx in pc.list_indexes()]
+    try:
+        existing_indexes = [idx["name"] for idx in pc.list_indexes()]
 
-    if PINECONE_INDEX_NAME not in existing_indexes:
-        pc.create_index(
-            name=PINECONE_INDEX_NAME,
-            dimension=1536,  # dim של text-embedding-3-small
-            metric="cosine",
-            spec=ServerlessSpec(
-                cloud="aws",
-                region="us-east-1",
-            ),
-        )
-
-    return pc.Index(PINECONE_INDEX_NAME)
+        if PINECONE_INDEX_NAME not in existing_indexes:
+            logger.info(f"Index '{PINECONE_INDEX_NAME}' not found. Creating...")
+            pc.create_index(
+                name=PINECONE_INDEX_NAME,
+                dimension=1536,  # Matches text-embedding-3-small dimension
+                metric="cosine",
+                spec=ServerlessSpec(
+                    cloud="aws",
+                    region="us-east-1",
+                ),
+            )
+            logger.info(f"Index '{PINECONE_INDEX_NAME}' created successfully.")
+        
+        return pc.Index(PINECONE_INDEX_NAME)
+    except PineconeException as e:
+        logger.error(f"Pinecone error while managing index: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error while managing index: {e}")
+        raise
 
 
 def main():
-    df = load_quiz_dataset_from_kaggle()
-    df = df.head(200)
-    print(f"Using only first {len(df)} rows out of full dataset")
+    """
+    Main execution flow: loads data, processes chunks, generates embeddings, and uploads to Pinecone.
+    """
+    try:
+        df = load_quiz_dataset_from_kaggle()
+        # Limit to first 200 rows for demonstration/testing
+        df = df.head(200)
+        logger.info(f"Processing a subset of {len(df)} rows.")
 
-    index = create_index_if_not_exists()
+        index = create_index_if_not_exists()
 
-    # 🧹 ניקוי האינדקס לפני העלאה מחדש
-    index.delete(delete_all=True)
-    print("Index cleared before ingesting new data.")
+        # Clear existing data in the index
+        try:
+            index.delete(delete_all=True)
+            logger.info("Existing index data cleared.")
+        except Exception as e:
+            logger.warning(f"Could not clear index (it might be empty): {e}")
 
-    # מצפים לעמודות כמו: category, type, difficulty, question, correct_answer, incorrect_answers
-    all_chunks: List[Dict] = []
+        all_chunks: List[Dict] = []
 
-    for idx, row in df.iterrows():
-        # נשתמש באינדקס של השורה בתור source_id בסיסי
-        source_id = f"quiz_{idx}"
+        for idx, row in df.iterrows():
+            try:
+                source_id = f"quiz_{idx}"
+                category = str(row.get("category", "")).strip()
+                difficulty = str(row.get("difficulty", "")).strip()
+                question = str(row.get("question", "")).strip()
+                correct_answer = str(row.get("correct_answer", "")).strip()
+                incorrect_answers = str(row.get("incorrect_answers", "")).strip()
 
-        category = str(row.get("category", "")).strip()
-        difficulty = str(row.get("difficulty", "")).strip()
-        question = str(row.get("question", "")).strip()
-        correct_answer = str(row.get("correct_answer", "")).strip()
-        incorrect_answers = str(row.get("incorrect_answers", "")).strip()
+                if not question:
+                    continue
 
-        # אם אין שאלה – אין מה לאנדקס
-        if not question:
-            continue
+                base_text = (
+                    f"Category: {category}\n"
+                    f"Difficulty: {difficulty}\n"
+                    f"Question: {question}\n"
+                    f"Correct answer: {correct_answer}\n"
+                    f"Incorrect answers: {incorrect_answers}"
+                )
 
-        # בונים טקסט אחיד שיהיה ברור למודל
-        # (אתה יכול לשנות את הפורמט איך שתרצה)
-        base_text = (
-            f"Category: {category}\n"
-            f"Difficulty: {difficulty}\n"
-            f"Question: {question}\n"
-            f"Correct answer: {correct_answer}\n"
-            f"Incorrect answers: {incorrect_answers}"
-        )
+                chunks = chunk_text(base_text, CHUNK_SIZE, CHUNK_OVERLAP)
 
-        chunks = chunk_text(base_text, CHUNK_SIZE, CHUNK_OVERLAP)
+                for c_idx, chunk in enumerate(chunks):
+                    all_chunks.append(
+                        {
+                            "id": f"{source_id}_{c_idx}",
+                            "text": chunk,
+                            "source_id": source_id,
+                        }
+                    )
+            except Exception as row_err:
+                logger.warning(f"Skipping row {idx} due to error: {row_err}")
+                continue
 
-        for c_idx, chunk in enumerate(chunks):
-            all_chunks.append(
-                {
-                    "id": f"{source_id}_{c_idx}",
-                    "text": chunk,
-                    "source_id": source_id,
-                }
-            )
+        logger.info(f"Total text chunks prepared: {len(all_chunks)}")
 
-    print(f"Total chunks: {len(all_chunks)}")
+        # Re-verify index connection
+        index = create_index_if_not_exists()
 
-    # 2. יוצרים אינדקס (אם לא קיים) ומקבלים אובייקט Index
-    index = create_index_if_not_exists()
+        batch_size = 50
+        for i in range(0, len(all_chunks), batch_size):
+            try:
+                batch = all_chunks[i : i + batch_size]
+                texts = [item["text"] for item in batch]
+                ids = [item["id"] for item in batch]
 
-    # 3. עושים Embedding לחתיכות בקבוצות (batchים)
-    batch_size = 50
-    for i in range(0, len(all_chunks), batch_size):
-        batch = all_chunks[i : i + batch_size]
-        texts = [item["text"] for item in batch]
-        ids = [item["id"] for item in batch]
+                vectors = embed_texts(texts)
 
-        vectors = embed_texts(texts)
+                pinecone_vectors = []
+                for vec, item_id, item in zip(vectors, ids, batch):
+                    pinecone_vectors.append(
+                        {
+                            "id": item_id,
+                            "values": vec,
+                            "metadata": {
+                                "text": item["text"],
+                                "source_id": item["source_id"],
+                            },
+                        }
+                    )
 
-        # מכינים את המידע ל-upsert ל-Pinecone
-        pinecone_vectors = []
-        for vec, item_id, item in zip(vectors, ids, batch):
-            pinecone_vectors.append(
-                {
-                    "id": item_id,
-                    "values": vec,
-                    "metadata": {
-                        "text": item["text"],
-                        "source_id": item["source_id"],
-                    },
-                }
-            )
+                index.upsert(vectors=pinecone_vectors)
+                logger.info(f"Upserted batch starting at index {i} ({len(pinecone_vectors)} items).")
 
-        # 4. מעלים ל-Pinecone
-        index.upsert(vectors=pinecone_vectors)
-        print(f"Upserted {len(pinecone_vectors)} vectors...")
+            except Exception as batch_err:
+                logger.error(f"Failed to upsert batch starting at {i}: {batch_err}")
+                # Continue with next batch instead of stopping entirely
+                continue
 
-    print("Done ingesting data.")
+        logger.info("Data ingestion process completed.")
+
+    except Exception as e:
+        logger.critical(f"Critical error in main process: {e}")
+        raise
 
 
 if __name__ == "__main__":
