@@ -31,6 +31,10 @@ function App() {
     }
   };
 
+  // Helper to decode HTML entities if needed, though React handles some.
+  // Ideally, data cleaning should happen on backend, but we display as is or use a parser if needed.
+  // For now, we simply display the strings.
+
   return (
     <div className="app">
       <h1>RAG Retrieval</h1>
@@ -41,7 +45,7 @@ function App() {
           id="query"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="For example: cats and dogs"
+          placeholder="For example: difficult history questions"
         />
 
         <button onClick={handleSearch} disabled={loading}>
@@ -68,12 +72,45 @@ function App() {
         <div className="results">
           {results.map((item) => (
             <div className="result" key={item.id}>
-              <div className="score">
-                <strong>ID:</strong> {item.id} | <strong>Score:</strong>{" "}
-                {item.score.toFixed(3)} | <strong>Source:</strong>{" "}
-                {item.source_id || "-"}
+              <div className="result-header">
+                <span>
+                  <strong>ID:</strong> {item.id}
+                </span>
+                <span className="separator">|</span>
+                <span>
+                  <strong>Score:</strong> {item.score.toFixed(3)}
+                </span>
+                <span className="separator">|</span>
+                <span>
+                  <strong>Source:</strong> {item.source_id || "-"}
+                </span>
               </div>
-              <p>{item.text}</p>
+
+              <div className="result-body">
+                {item.category && (
+                  <div className="result-row">
+                    <strong>Category:</strong> {item.category}
+                  </div>
+                )}
+                {item.difficulty && (
+                  <div className="result-row">
+                    <strong>Difficulty:</strong> {item.difficulty}
+                  </div>
+                )}
+                {item.question && (
+                  <div className="result-row">
+                    <strong>Question:</strong> {item.question}
+                  </div>
+                )}
+                {item.correct_answer && (
+                  <div className="result-row">
+                    <strong>Correct Answer:</strong> {item.correct_answer}
+                  </div>
+                )}
+
+                {/* Fallback to text if structured data is missing */}
+                {!item.question && <p className="result-text">{item.text}</p>}
+              </div>
             </div>
           ))}
         </div>
