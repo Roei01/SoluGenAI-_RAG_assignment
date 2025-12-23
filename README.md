@@ -7,6 +7,29 @@ using <strong>OpenAI</strong> and <strong>Pinecone</strong>, with a Python backe
 
 <hr />
 
+<h2>🛠 Prerequisites</h2>
+
+<ul>
+  <li>
+    <strong>Python</strong> must be installed on your machine
+    (<code>Python 3.9+</code> recommended)
+  </li>
+  <li>
+    A valid <strong>Pinecone account</strong> to obtain an API key
+    (<a href="https://app.pinecone.io" target="_blank">https://app.pinecone.io</a>)
+  </li>
+  <li>
+    A valid <strong>OpenAI account</strong> to obtain an API key
+    (<a href="https://platform.openai.com" target="_blank">https://platform.openai.com</a>)
+  </li>
+</ul>
+
+<p>
+Make sure you have generated both API keys before continuing.
+</p>
+
+<hr />
+
 <h2>Environment Variables</h2>
 
 <p>
