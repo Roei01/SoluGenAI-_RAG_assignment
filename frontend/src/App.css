@@ -1,0 +1,133 @@
+/* src/App.css */
+
+.app {
+  font-family: inherit;
+  color: #0f172a; /* טקסט כהה ונעים */
+}
+
+/* כותרת עליונה */
+.app h1 {
+  text-align: center;
+  margin-bottom: 24px;
+  font-size: 2.1rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #0f172a;
+}
+
+/* כרטיסים */
+.card {
+  background: #ffffff;
+  padding: 20px 18px;
+  border-radius: 16px;
+  box-shadow: 0 18px 35px rgba(15, 23, 42, 0.08);
+  margin-bottom: 16px;
+}
+
+/* שדה טקסט */
+label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  font-size: 0.95rem;
+  color: #111827;
+}
+
+textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  padding: 10px 12px;
+  font-size: 0.95rem;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background-color: #f9fafb;
+  color: #111827;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+textarea::placeholder {
+  color: #9ca3af;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+  background-color: #ffffff;
+}
+
+/* כפתור */
+button {
+  margin-top: 10px;
+  padding: 0.55rem 1.4rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  color: #ffffff;
+  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.35);
+  transition: transform 0.1s ease, box-shadow 0.1s ease, opacity 0.15s ease,
+    filter 0.15s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 30px rgba(37, 99, 235, 0.4);
+  filter: brightness(1.03);
+}
+
+button:active {
+  transform: translateY(0);
+  box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* סטטוסים */
+.status {
+  font-size: 0.9rem;
+  margin-top: 8px;
+}
+
+.status.error {
+  color: #b91c1c;
+}
+
+.status.ok {
+  color: #166534;
+}
+
+/* תוצאות */
+.no-results {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.results {
+  margin-top: 12px;
+}
+
+.result {
+  border: 1px solid #e5e7eb;
+  padding: 12px 12px;
+  margin: 8px 0;
+  border-radius: 12px;
+  background: #f9fafb;
+}
+
+.score {
+  font-size: 0.8rem;
+  color: #4b5563;
+  margin-bottom: 6px;
+}
