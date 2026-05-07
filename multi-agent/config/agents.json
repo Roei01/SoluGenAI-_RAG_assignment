@@ -1,0 +1,81 @@
+{
+  "project": "LinguaHebrew",
+  "version": "1.0.0",
+  "description": "Hebrew language learning platform (Hebrew → any language) with LLM",
+  "total_agents": 15,
+  "model_default": "claude-sonnet-4-6",
+  "phases": [
+    {
+      "id": 0,
+      "name": "Foundation",
+      "agents": ["foundation"],
+      "parallel": false,
+      "description": "Build the complete Next.js base scaffold"
+    },
+    {
+      "id": 1,
+      "name": "Features + QA",
+      "agents": [
+        "feature-ui", "feature-vocabulary", "feature-grammar",
+        "feature-ai-tutor", "feature-quiz", "feature-progress",
+        "qa-frontend", "qa-backend", "qa-ux", "qa-integration"
+      ],
+      "parallel": true,
+      "description": "Build all features and QA them concurrently"
+    },
+    {
+      "id": 2,
+      "name": "Integration",
+      "agents": ["integration-agent"],
+      "parallel": false,
+      "description": "Merge all feature branches into main"
+    },
+    {
+      "id": 3,
+      "name": "Deploy + Monitor",
+      "agents": ["deploy-agent", "monitor-agent"],
+      "parallel": true,
+      "description": "Build, validate, and monitor the final app"
+    }
+  ],
+  "message_types": {
+    "ready_for_qa": "Feature agent → QA agent: branch is ready for review",
+    "bug_report": "QA agent → Feature agent: list of bugs found",
+    "fix_complete": "Feature agent → QA agent: bugs have been fixed",
+    "qa_approved": "QA agent → Feature agent + qa-integration: branch approved",
+    "backend_qa_approved": "qa-backend → integration-agent: API routes approved",
+    "ux_report": "qa-ux → integration-agent: UX findings report",
+    "integration_approved": "qa-integration → integration-agent: all features integrated",
+    "ready_to_deploy": "integration-agent → deploy-agent: merged app ready",
+    "deployment_complete": "deploy-agent → monitor-agent: build result",
+    "status_update": "any → any: general status update"
+  },
+  "app": {
+    "name": "LinguaHebrew",
+    "description": "Learn any language from Hebrew",
+    "tech_stack": {
+      "framework": "Next.js 14 (App Router)",
+      "language": "TypeScript",
+      "styling": "TailwindCSS",
+      "components": "shadcn/ui",
+      "ai": "Anthropic Claude API (claude-haiku-3-5)",
+      "icons": "lucide-react"
+    },
+    "target_languages": [
+      "English", "Arabic", "French", "Spanish", "Russian",
+      "German", "Chinese", "Japanese", "Portuguese", "Italian",
+      "Dutch", "Turkish", "Polish", "Korean"
+    ],
+    "features": [
+      "Vocabulary flashcards with spaced repetition",
+      "Grammar lessons with interactive exercises",
+      "AI conversation tutor (Claude-powered)",
+      "Quiz module with multiple question types",
+      "Progress tracking with XP and achievements",
+      "Streaks and gamification",
+      "Mobile-first responsive design",
+      "Dark mode support",
+      "Hebrew RTL support"
+    ]
+  }
+}
